@@ -1,5 +1,4 @@
 import streamlit as st
-from PIL import Image
 import cbir_methods, paginator
 
 st.set_page_config(layout='wide', page_title='CBIR Tool')
@@ -24,9 +23,10 @@ def get_image_path(img_num):
 
 # Create page title and introduction
 st.title("Content-Based Image Retrieval Tool")
-st.write("Welcome to the CBIR Tool! To view the images in the database, type a number into the box below. \
-         Once you've selected an image, use the drop down menu to choose a CBIR method. \
-         Then click \'Retrieve Images\' to retrieve images based on the method you chose. \
+st.write("Welcome to the CBIR Tool! To view the images in the database, type a \
+         number into the box below. Once you've selected an image, use the \
+         drop down menu to choose a CBIR method. Then click \"Retrieve \
+         Images\" to retrieve images based on the method you chose. \
          Your retrieval results will be displayed to the right.")
 
 # Create 2 columns 
