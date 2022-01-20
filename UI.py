@@ -32,6 +32,10 @@ st.write("Welcome to the CBIR Tool! To view the images in the database, type a n
 # Create 2 columns 
 left_col, right_col = st.columns(2)
 
+# Initialize results key in the session state
+if 'results' not in st.session_state:
+    st.session_state.results = -1
+
 # Display these items in the left column
 with left_col:
     # Select an image and display it. Displays image 1 by default
@@ -67,7 +71,7 @@ with right_col:
             st.session_state.results = results
 
     # If the results exist
-    if st.session_state.results:
+    if st.session_state.results != -1:
         #Get the image paths for the results     
         img_results = [path for distance, path in st.session_state.results]
 
