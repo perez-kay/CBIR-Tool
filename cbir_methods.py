@@ -71,7 +71,7 @@ def calculate_color_code(img_path):
 
     pic = img.open(img_path)
     width, height = pic.size
-    binaries = list()
+    decimals = list()
 
     for i in range(width):
         for j in range(height):
@@ -82,15 +82,15 @@ def calculate_color_code(img_path):
             
             binary = r[0:2] + g[0:2] + b[0:2]
             decimal = int(binary, 2)
-            binaries.append(decimal)
+            decimals.append(decimal)
 
-    hist, bin_edges = np.histogram(binaries, bins=64)
+    hist, bin_edges = np.histogram(decimals, bins=64)
     return (width*height, hist)
 
 def calculate_manhattan(img1, img2):
     """
     Calculates the Manhattan Distance between the two given lists. The lists
-    must be of the same length
+    must be of the same length.
 
     Parameters
     ----------
@@ -139,7 +139,7 @@ def get_distance(selected_img, method):
         value in each tuple is the distance. The second is the image path.
         The list is sorted in ascending order based on distance.
     """
-    
+
     selected = method(selected_img)
     result = list()
     for img in os.listdir("images/"):
