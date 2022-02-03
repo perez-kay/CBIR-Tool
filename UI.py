@@ -1,5 +1,14 @@
 import streamlit as st
-import cbir_methods, paginator
+import cbir_methods, paginator, json
+
+with open('intensity_data.json') as f:
+    intensity_data = json.load(f)
+
+with open('color_code_data.json') as f:
+    color_code_data = json.load(f)
+
+st.session_state.intensity = intensity_data
+st.session_state.color_code = color_code_data
 
 st.set_page_config(layout='wide', page_title='CBIR Tool')
 
@@ -61,12 +70,12 @@ with right_col:
             # Fetch results based on mode chosen
             if option == "Intensity":
                 with st.spinner('Fetching your results...'):
-                    results = cbir_methods.get_distance(img_path, cbir_methods.calculate_intensity)
-            
+                    #results = cbir_methods.get_distance(img_path, cbir_methods.calculate_intensity)
+                    results = st.session_state.intensity[img_path]
             if option == "Color-Code":
                 with st.spinner('Fetching your results...'):
-                    results = cbir_methods.get_distance(img_path, cbir_methods.calculate_color_code)
-            
+                    #results = cbir_methods.get_distance(img_path, cbir_methods.calculate_color_code)
+                    results = st.session_state.color_code[img_path]
             # Update session state so it remembers results
             st.session_state.results = results
 
