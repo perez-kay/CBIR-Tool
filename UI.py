@@ -60,7 +60,7 @@ with left_col:
     run_checked = st.button("Retrieve Images")
 
 # Display these items in the right columm
-with right_col:
+with st.container():
     # If the button has been pressed
     if run_checked:
         if option == '-':
@@ -83,13 +83,29 @@ with right_col:
     if st.session_state.results != -1:
         #Get the image paths for the results     
         img_results = [path for distance, path in st.session_state.results]
-
         # Create paginator to display results pages
-        img_iter = paginator.paginator('Retrieval Results', img_results, items_per_page=20, on_sidebar=False)
-        indicies, imgs = map(list, zip(*img_iter))
+        #img_iter = paginator.paginator('Retrieval Results', img_results, items_per_page=20, on_sidebar=False)
+        #indicies, imgs = map(list, zip(*img_iter))
+        #st.image(imgs, width=150, caption=imgs)
+
+        # from itertools import cycle
+        #while i < len(img_results):
+        # cols = cycle(st.columns(5))
+        # for idx, img_results in enumerate(img_results):
+        #     next(cols).image(img_results, width=150, caption=img_results)
+
+        i = 0
+        while i < len(img_results):
+            for _ in range(len(img_results)):
+                cols = st.columns(5)
+                for col_num in range(5):
+                    if i < len(img_results):
+                        cols[col_num].image(img_results[i], width=150, caption=img_results[i])
+                        cols[col_num].checkbox('Relevant', key=img_results[i])
+                    i += 1
 
         # Display image results
-        st.image(imgs, width=150, caption=imgs)  
+             
 
 
 
