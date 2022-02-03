@@ -1,7 +1,7 @@
 from PIL import Image as img
 import numpy as np
-import os
-import streamlit as st
+import os, json
+#import streamlit as st
 
 def get_intensity(vals):
     """
@@ -119,7 +119,6 @@ def calculate_manhattan(img1, img2):
         result += abs((h_i / size_i) - (h_k / size_k))
     return result
 
-@st.cache(show_spinner=False) # used by streamlit to cache results
 def get_distance(selected_img, method):
     """
     Calcuates the Manhattan Distance between the selected image and all other
@@ -152,5 +151,36 @@ def get_distance(selected_img, method):
             result.append((distance, path))
     return sorted(result)
 
+def intensity_data_to_json():
+    """
+    Computes the Manhattan Distance between every image in the 'images/'
+    folder using the Intensity method. Stores all of this data in JSON file.
+    """
+    intensity_data = dict()
+    for img in os.listdir("images/"):
+        if img == 'Thumbs.db':
+            continue
+        path = 'images/' + img
+        result = get_distance(path, calculate_intensity)
+        intensity_data[path] = result
 
+    with open('intensity_data.json', 'w') as file:
+        json.dump(intensity_data, file)
+
+def color_code_data_to_json():
+    """
+    Computes the Manhattan Distance between every image in the 'images/'
+    folder using the Color-code method. Stores all of this data in
+    JSON file.
+    """
+    color_code_data = dict()
+    for img in os.listdir("images/"):
+        if img == 'Thumbs.db':
+            continue
+        path = 'images/' + img
+        result = get_distance(path, calculate_color_code)
+        color_code_data[path] = result
+
+    with open('color_code_data.json', 'w') as file:
+        json.dump(color_code_data, file)
 
