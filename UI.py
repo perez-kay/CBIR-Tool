@@ -1,3 +1,4 @@
+from attr import s
 import streamlit as st
 import cbir_methods, paginator, json
 
@@ -10,7 +11,7 @@ with open('color_code_data.json') as f:
 st.session_state.intensity = intensity_data
 st.session_state.color_code = color_code_data
 
-st.set_page_config(layout='wide', page_title='CBIR Tool')
+st.set_page_config(page_title='CBIR Tool')
 
 def get_image_path(img_num):
     """
@@ -45,15 +46,22 @@ left_col, right_col = st.columns(2)
 if 'results' not in st.session_state:
     st.session_state.results = -1
 
+if 'page_number' not in st.session_state:
+    st.session_state.page_number = 0
+
 # Display these items in the left column
+
+left_col , right_col = st.columns([5, 2])
+
 with left_col:
     # Select an image and display it. Displays image 1 by default
     img_num = st.number_input("Select an image by typing a number between 1 - 100", min_value=1, max_value=100, step=1)
     img_path = get_image_path(img_num)
-    st.image(image=(img_path), use_column_width='always')
+    st.image(image=img_path, use_column_width='always')
 
+with right_col:
     # Set up the select box for the color codes
-    methods = ['-', "Intensity", "Color-Code"]
+    methods = ['-', "Intensity", "Color-Code", "Intensity + Color-Code"]
     option = st.selectbox('Choose a method', methods)
 
     # Set up the run button
@@ -63,7 +71,8 @@ with left_col:
 with st.container():
     # If the button has been pressed
     if run_checked:
-        if option == '-':
+        st.session_state.page_number = 0
+        if option == '-' or option == 'Intensity + Color-Code':
             with left_col:
                 st.error("Please select a method first.")
         else:
@@ -78,7 +87,7 @@ with st.container():
                     results = st.session_state.color_code[img_path]
             # Update session state so it remembers results
             st.session_state.results = results
-
+    
     # If the results exist
     if st.session_state.results != -1:
         #Get the image paths for the results     
@@ -93,18 +102,44 @@ with st.container():
         # cols = cycle(st.columns(5))
         # for idx, img_results in enumerate(img_results):
         #     next(cols).image(img_results, width=150, caption=img_results)
+        
+        N = 20
+        
+        last_page = len(img_results) // N
+        
+        
+        prev, page_num, next = st.columns([3, 3, 1])
 
-        i = 0
-        while i < len(img_results):
-            for _ in range(len(img_results)):
+        if next.button('Next Page'):
+            if (st.session_state.page_number + 1) > last_page:
+                st.session_state.page_number = last_page
+            else:
+                st.session_state.page_number += 1
+
+        if prev.button("Previous Page"):
+            if (st.session_state.page_number - 1) < 0:
+                st.session_state.page_number = 0
+            else:
+                st.session_state.page_number -= 1
+
+        page_num.header("Page " + str(st.session_state.page_number + 1) + " of 5")
+
+        start_idx = st.session_state.page_number * N
+        end_idx = ((1 + st.session_state.page_number) * N)
+
+        #st.image(img_results[start_idx:end_idx], width=150)
+
+        while start_idx < end_idx:
+            if end_idx == 100:
+                end_idx -= 1
+            for _ in range(end_idx):
                 cols = st.columns(5)
                 for col_num in range(5):
-                    if i < len(img_results):
-                        cols[col_num].image(img_results[i], width=150, caption=img_results[i])
-                        cols[col_num].checkbox('Relevant', key=img_results[i])
-                    i += 1
+                    if start_idx < end_idx:
+                        cols[col_num].image(img_results[start_idx], use_column_width='always', caption=img_results[start_idx])
+                        cols[col_num].checkbox('Relevant', key=img_results[start_idx])
+                    start_idx += 1
 
-        # Display image results
              
 
 
