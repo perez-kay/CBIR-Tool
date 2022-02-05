@@ -53,6 +53,9 @@ if 'results' not in st.session_state:
 if 'page_number' not in st.session_state:
     st.session_state.page_number = 0
 
+if 'relevant_imgs' not in st.session_state:
+    st.session_state.relevant_imgs = set()
+
 left_col , right_col = st.columns([5, 2])
 
 with left_col:
@@ -84,10 +87,13 @@ with st.container():
             # Fetch results based on mode chosen
             if option == "Intensity":
                 results = st.session_state.intensity[img_path]
+                st.session_state.relevant_imgs = set() # user chose a diff method, so reset rf results
             if option == "Color-Code":
                 results = st.session_state.color_code[img_path]
+                st.session_state.relevant_imgs = set() # user chose a diff method, so reset rf results
             if option == "Intensity + Color-Code":
                 results = rf.calculate_no_bias_dist(st.session_state.normalized_matrix, rf.get_img_num(img_path))
+            
             # Update session state so it remembers results
             st.session_state.results = results
     
@@ -120,9 +126,6 @@ with st.container():
         start_idx = st.session_state.page_number * N
         end_idx = ((1 + st.session_state.page_number) * N)
 
-
-        relevant_imgs = list()
-
         # display results in a grid
         while start_idx < end_idx:
             if end_idx == 100:
@@ -135,9 +138,11 @@ with st.container():
                         if option == "Intensity + Color-Code" and use_rf:
                             checked = cols[col_num].checkbox('Relevant', key=img_results[start_idx])
                             if checked:
-                                relevant_imgs.append(img_results[start_idx])
+                                st.session_state.relevant_imgs.add(img_results[start_idx])
+                            if img_results[start_idx] in st.session_state.relevant_imgs and not checked:
+                                st.session_state.relevant_imgs.remove(img_results[start_idx])
                     start_idx += 1
-        
+        #print(st.session_state.relevant_imgs)
              
 
 
