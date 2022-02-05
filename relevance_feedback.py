@@ -127,6 +127,8 @@ def calculate_no_bias_dist(normalized_matrix, query_num):
 
 # df = pd.read_csv('normalized_matrix.csv', index_col=0).T
 
+# assuming that if the user switches from I+CC to something else, app does NOT
+# nee d
 #def calculate_updated_weight(relevant_imgs):
     # somehow need to save this list
 
