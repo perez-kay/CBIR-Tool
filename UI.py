@@ -1,6 +1,7 @@
-from attr import s
 import streamlit as st
-import cbir_methods, paginator, json
+import json
+import relevance_feedback as rf
+import pandas as pd
 
 with open('intensity_data.json') as f:
     intensity_data = json.load(f)
@@ -8,8 +9,11 @@ with open('intensity_data.json') as f:
 with open('color_code_data.json') as f:
     color_code_data = json.load(f)
 
+normalized_matrix = pd.read_csv('normalized_matrix.csv', index_col=0).T
+
 st.session_state.intensity = intensity_data
 st.session_state.color_code = color_code_data
+st.session_state.normalized_matrix = normalized_matrix
 
 st.set_page_config(page_title='CBIR Tool')
 
@@ -49,8 +53,6 @@ if 'results' not in st.session_state:
 if 'page_number' not in st.session_state:
     st.session_state.page_number = 0
 
-# Display these items in the left column
-
 left_col , right_col = st.columns([5, 2])
 
 with left_col:
@@ -63,6 +65,7 @@ with right_col:
     # Set up the select box for the color codes
     methods = ['-', "Intensity", "Color-Code", "Intensity + Color-Code"]
     option = st.selectbox('Choose a method', methods)
+    use_rf = st.checkbox('Use Relevance Feedback', key='use_rf')
 
     # Set up the run button
     run_checked = st.button("Retrieve Images")
@@ -72,19 +75,19 @@ with st.container():
     # If the button has been pressed
     if run_checked:
         st.session_state.page_number = 0
-        if option == '-' or option == 'Intensity + Color-Code':
+        st.session_state.results = -1
+
+        if option == '-':
             with left_col:
                 st.error("Please select a method first.")
         else:
             # Fetch results based on mode chosen
             if option == "Intensity":
-                with st.spinner('Fetching your results...'):
-                    #results = cbir_methods.get_distance(img_path, cbir_methods.calculate_intensity)
-                    results = st.session_state.intensity[img_path]
+                results = st.session_state.intensity[img_path]
             if option == "Color-Code":
-                with st.spinner('Fetching your results...'):
-                    #results = cbir_methods.get_distance(img_path, cbir_methods.calculate_color_code)
-                    results = st.session_state.color_code[img_path]
+                results = st.session_state.color_code[img_path]
+            if option == "Intensity + Color-Code":
+                results = rf.calculate_no_bias_dist(st.session_state.normalized_matrix, rf.get_img_num(img_path))
             # Update session state so it remembers results
             st.session_state.results = results
     
@@ -92,22 +95,12 @@ with st.container():
     if st.session_state.results != -1:
         #Get the image paths for the results     
         img_results = [path for distance, path in st.session_state.results]
-        # Create paginator to display results pages
-        #img_iter = paginator.paginator('Retrieval Results', img_results, items_per_page=20, on_sidebar=False)
-        #indicies, imgs = map(list, zip(*img_iter))
-        #st.image(imgs, width=150, caption=imgs)
+        
+        
+        N = 20 # number of entries per page
 
-        # from itertools import cycle
-        #while i < len(img_results):
-        # cols = cycle(st.columns(5))
-        # for idx, img_results in enumerate(img_results):
-        #     next(cols).image(img_results, width=150, caption=img_results)
-        
-        N = 20
-        
+        # set up pageination
         last_page = len(img_results) // N
-        
-        
         prev, page_num, next = st.columns([3, 3, 1])
 
         if next.button('Next Page'):
@@ -122,13 +115,15 @@ with st.container():
             else:
                 st.session_state.page_number -= 1
 
-        page_num.header("Page " + str(st.session_state.page_number + 1) + " of 5")
+        page_num.write("Page " + str(st.session_state.page_number + 1) + " of 5")
 
         start_idx = st.session_state.page_number * N
         end_idx = ((1 + st.session_state.page_number) * N)
 
-        #st.image(img_results[start_idx:end_idx], width=150)
 
+        relevant_imgs = list()
+
+        # display results in a grid
         while start_idx < end_idx:
             if end_idx == 100:
                 end_idx -= 1
@@ -137,9 +132,12 @@ with st.container():
                 for col_num in range(5):
                     if start_idx < end_idx:
                         cols[col_num].image(img_results[start_idx], use_column_width='always', caption=img_results[start_idx])
-                        cols[col_num].checkbox('Relevant', key=img_results[start_idx])
+                        if option == "Intensity + Color-Code" and use_rf:
+                            checked = cols[col_num].checkbox('Relevant', key=img_results[start_idx])
+                            if checked:
+                                relevant_imgs.append(img_results[start_idx])
                     start_idx += 1
-
+        
              
 
 
