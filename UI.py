@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import relevance_feedback as rf
 import pandas as pd
+from streamlit import caching
 
 with open('intensity_data.json') as f:
     intensity_data = json.load(f)
@@ -9,7 +10,7 @@ with open('intensity_data.json') as f:
 with open('color_code_data.json') as f:
     color_code_data = json.load(f)
 
-normalized_matrix = pd.read_csv('normalized_matrix.csv', index_col=0).T
+normalized_matrix = pd.read_csv('normalized_matrix2.csv', index_col=0).T
 
 st.session_state.intensity = intensity_data
 st.session_state.color_code = color_code_data
@@ -56,6 +57,9 @@ if 'page_number' not in st.session_state:
 if 'relevant_imgs' not in st.session_state:
     st.session_state.relevant_imgs = set()
 
+if 'curr_img_num' not in st.session_state:
+        st.session_state.curr_img_num = -1
+
 left_col , right_col = st.columns([5, 2])
 
 with left_col:
@@ -63,6 +67,16 @@ with left_col:
     img_num = st.number_input("Select an image by typing a number between 1 - 100", min_value=1, max_value=100, step=1)
     img_path = get_image_path(img_num)
     st.image(image=img_path, use_column_width='always')
+    if img_num != st.session_state.curr_img_num:
+        keys_to_skip = ['intensty', 'color_code', 'normalized_matrix', 'results', \
+                        'page_number', 'relevant_imgs', 'curr_img_num']
+        st.session_state.curr_img_num = img_num
+        st.session_state.relevant_imgs = set()
+        for key in st.session_state.keys():
+            if key not in keys_to_skip:
+                del st.session_state[key]
+        st.session_state.results = -1
+        
 
 with right_col:
     # Set up the select box for the color codes
@@ -92,8 +106,12 @@ with st.container():
                 results = st.session_state.color_code[img_path]
                 st.session_state.relevant_imgs = set() # user chose a diff method, so reset rf results
             if option == "Intensity + Color-Code":
-                results = rf.calculate_no_bias_dist(st.session_state.normalized_matrix, rf.get_img_num(img_path))
-            
+                if len(st.session_state.relevant_imgs) == 0: # if set empty
+                    # use no bias weights
+                    results = rf.calculate_distance(st.session_state.normalized_matrix, st.session_state.curr_img_num, 1/89)
+                else: # set has stuff in it
+                    results = rf.calculate_updated_weight(st.session_state.relevant_imgs, st.session_state.normalized_matrix, st.session_state.curr_img_num)
+
             # Update session state so it remembers results
             st.session_state.results = results
     
@@ -127,6 +145,7 @@ with st.container():
         end_idx = ((1 + st.session_state.page_number) * N)
 
         # display results in a grid
+        rel_img = set()
         while start_idx < end_idx:
             if end_idx == 100:
                 end_idx -= 1
@@ -142,7 +161,6 @@ with st.container():
                             if img_results[start_idx] in st.session_state.relevant_imgs and not checked:
                                 st.session_state.relevant_imgs.remove(img_results[start_idx])
                     start_idx += 1
-        #print(st.session_state.relevant_imgs)
              
 
 
