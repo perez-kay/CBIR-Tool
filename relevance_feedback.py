@@ -55,7 +55,8 @@ def get_feature_matrix():
         for j in range(1, len(intens[i]), 1):
             intens_features.append(intens[i][j] / intens_img_size)
         
-        combined[i] = np.concatenate((np.array(color_features), np.array(intens_features)))
+        combined[i] = np.concatenate((np.array(color_features), \
+                                      np.array(intens_features)))
 
     combined = collections.OrderedDict(sorted(combined.items()))
     df = pd.DataFrame(combined).T.fillna(0)
