@@ -24,7 +24,7 @@ def get_img_num(img_path):
     else:
         return int(img_path[7:10])
 
-def get_feature_matrix():
+def feature_mtx():
     """
     Creates the feature matrix for all images in the 'images/' folder.
 
@@ -32,26 +32,35 @@ def get_feature_matrix():
     -------
     DataFrame
         A pandas Dataframe containing the feature data. The rows are the images
-        and the columns are the features.
+        and the columns are the features. Has shape 100 x 89
     """
-    data = dict()
-    for img in os.listdir('images/'):
-        if img == 'Thumbs.db':
-            continue
-        path = 'images/' + img
-        img_num = get_img_num(path)
-        intens = cbir_methods.calculate_intensity(path)
-        color = cbir_methods.calculate_color_code(path)
-        img_size = intens[0]
-        intensity_bins = intens[1] / img_size
-        color_bins = color[1] / img_size
-        intensity_bins = np.around(intensity_bins, 5)
-        color_bins = np.around(color_bins, 5)
-        bins = np.concatenate((intensity_bins, color_bins))
-        data[img_num] = bins
-    data = collections.OrderedDict(sorted(data.items()))
-    df = pd.DataFrame(data).T.fillna(0)
+    # FIRST COL = IMG SIZE
+    color = pd.read_excel('colorCode.xlsx', header=None, index_col=0).T
+    intens = pd.read_excel('intensity.xlsx', header=None, index_col=0).T
+    
+    color = color.to_dict(orient='list')
+    intens = intens.to_dict(orient='list')
+
+    # dict like: {img_num : [bins]}
+    all = dict()
+
+    # for each image 1-100
+    for i in range(1, 101, 1):
+        color_img_size = color[i][0]
+        intens_img_size = intens[i][0]
+        color_features = list()
+        intens_features = list()
+        for j in range(1, len(color[i]), 1):
+            color_features.append(color[i][j] / color_img_size)
+
+        for j in range(1, len(intens[i]), 1):
+            intens_features.append(intens[i][j] / intens_img_size)
+        
+        all[i] = np.concatenate((np.array(color_features), np.array(intens_features)))
+    all = collections.OrderedDict(sorted(all.items()))
+    df = pd.DataFrame(all).T.fillna(0)
     return df
+
 
 def get_normalized_matrix(feature_matrix):
     """
@@ -71,51 +80,32 @@ def get_normalized_matrix(feature_matrix):
         normalized_data = (feature - avg[idx]) / std[idx]
         normalized[col] = normalized_data
         idx += 1
-    df = pd.DataFrame(normalized)
-    with open('normalized_matrix.csv', 'w') as file:
+    df = pd.DataFrame(normalized).fillna(0)
+    with open('normalized_matrix2.csv', 'w') as file:
         df.to_csv(path_or_buf=file)
 
-
-#df = pd.read_csv('normalized_matrix.csv', index_col=0).T
-
-# ex = {1:[.25,.375,.375,.25,.25,.25,.25], 2:[.1,.5,.4,0,0,.5,.5], 3:[.4,.4,.2,.4,.4,.2,0], 4:[.4,.4,.2,.2,.2,.2,.4]}
-# df = pd.DataFrame(ex).T
-# print(df)
-
-# avg = df.mean()
-# std = df.std()
-
-# normalized = dict()
-# idx = 0
-# for col, feature in df.iteritems():
-#     normalized_data = (feature - avg[idx]) / std[idx]
-#     normalized[col] = normalized_data
-#     idx += 1
-# df = pd.DataFrame(normalized)
-# print(df)
-
-
-
 def calculate_weighted_dist(query, retrieved, weight):
-    return (weight * abs((query - retrieved))).sum()
+    if type(weight) == float:
+        return (weight * abs((query - retrieved))).sum()
+    else:
     #print(query)
-    # query = np.nan_to_num(query.to_numpy())
-    
-    # retrieved = np.nan_to_num(retrieved.to_numpy())
-    # distance = 0
-    # for i in range(query.size):
-    #     distance += (weight * abs(query[i] - retrieved[i]))
-    # return distance
+        query = query.tolist()
+        weight = weight.tolist()
+        retrieved = retrieved.tolist()
+        
+        distance = 0
+        for i in range(len(query)):
+            distance += (weight[i] * abs(query[i] - retrieved[i]))
+        return distance
 
 
 
-def calculate_no_bias_dist(normalized_matrix, query_num):
+def calculate_distance(normalized_matrix, query_num, weight):
     # query img should be the img num
     # this gives the series with the query img's features
     query_features = normalized_matrix[query_num]
 
     results = list()
-    weight = 1/89
     for retrieved_num, retrieved_features in normalized_matrix.iteritems():
         distance = calculate_weighted_dist(query_features,
                                            retrieved_features, weight)
@@ -124,17 +114,83 @@ def calculate_no_bias_dist(normalized_matrix, query_num):
     return sorted(results)
 
 
-
-# df = pd.read_csv('normalized_matrix.csv', index_col=0).T
-
 # assuming that if the user switches from I+CC to something else, app does NOT
 # nee d
-#def calculate_updated_weight(relevant_imgs):
-    # somehow need to save this list
+def calculate_updated_weight(relevant_imgs, normalized_matrix, query_num):
+    # loop through set and pull out all img features from matrix
+    rf_features = dict()
+    for img_path in relevant_imgs:
+        img_num = get_img_num(img_path)
+        img_features = normalized_matrix[img_num]
+        rf_features[img_num] = img_features
+    rf_matrix = pd.DataFrame(rf_features)
+    
+    std = rf_matrix.T.std()
+    avg = rf_matrix.T.mean()
+    #print(rf_matrix.T.std())
+    #print(normalized_matrix)
+    
+    # checks std vals and removes 0s based on condition
+    std = check_std(std, avg)
+    #print('len std:', len(std))
+    
+    updated_weights = compute_new_weights(std)
+    normalized_weights = compute_normalized_weights(updated_weights)
 
+    return calculate_distance(normalized_matrix, query_num, normalized_weights)
 
+def check_std(std, avg):
+    std_vals = std.tolist()
+    avg_vals = avg.tolist()
+    for i in range(len(std_vals)):
+        if std_vals[i] == 0:
+            if avg_vals[i] != 0:
+                std_vals[i] = 0.5 * (min(filter(None, std_vals)))
+    return std_vals
 
+def compute_new_weights(std):
+    new_weights = list()
+    for i in range(len(std)):
+        new_weights.append((1 / std[i]) if std[i] != 0 else 0)
+    return new_weights
 
-# print(calculate_no_bias_dist(df, 1))
+def compute_normalized_weights(weights):
+    weights = pd.Series(weights)
+    sum_weights = weights.sum()
+    #print(sum_weights)
+    normalized_weights = weights / sum_weights
+    return normalized_weights
+        
+
+def feature_mtx():
+    # FIRST COL = IMG SIZE
+    color = pd.read_excel('colorCode.xlsx', header=None, index_col=0).T
+    intens = pd.read_excel('intensity.xlsx', header=None, index_col=0).T
+    
+    color = color.to_dict(orient='list')
+    intens = intens.to_dict(orient='list')
+
+    # dict like: {img_num : [bins]}
+    all = dict()
+
+    # for each image 1-100
+    for i in range(1, 101, 1):
+        color_img_size = color[i][0]
+        intens_img_size = intens[i][0]
+        color_features = list()
+        intens_features = list()
+        for j in range(1, len(color[i]), 1):
+            color_features.append(color[i][j] / color_img_size)
+
+        for j in range(1, len(intens[i]), 1):
+            intens_features.append(intens[i][j] / intens_img_size)
+        
+        all[i] = np.concatenate((np.array(color_features), np.array(intens_features)))
+    all = collections.OrderedDict(sorted(all.items()))
+    df = pd.DataFrame(all).T.fillna(0)
+    return df
+
+get_normalized_matrix(feature_mtx())
+
 
 
