@@ -1,10 +1,18 @@
 # Content-Based Image Retrieval Tool
 
 ## Project Description
-The Content-Based Image Retrieval tool uses two different color histogram comparison methods to retrieve similar images based on a query image. 
+The Content-Based Image Retrieval tool uses two different color histogram comparison methods to retrieve similar images based on a query image.
+
+## Technologies
+This app was implemented with:
+- Python 3.9.7
+- Pandas 1.4.0
+- Pillow 8.4.0
+- NumPy 1.21.2
+- Streamlit 1.5.0 
 
 ## Demonstration
-The app is able for demo use at: https://share.streamlit.io/perez-kay/cbir-tool/UI.py. Due to some necessary pre-calculations, the app may take a minute to load.
+The app is available  for demo use at: https://share.streamlit.io/perez-kay/cbir-tool/UI.py. Due to some necessary pre-calculations, the app may take a minute to load.
 
 ### How To Use
 **Intensity or Color-Code (NO Relevance Feedback)**
