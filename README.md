@@ -1,6 +1,42 @@
 # Content-Based Image Retrieval Tool
+
 ## Project Description
 The Content-Based Image Retrieval tool uses two different color histogram comparison methods to retrieve similar images based on a query image. 
+
+## Demonstration
+The app is able for demo use at: https://share.streamlit.io/perez-kay/cbir-tool/UI.py. Due to some necessary pre-calculations, the app may take a minute to load.
+
+### How To Use
+**Intensity or Color-Code (NO Relevance Feedback)**
+
+1. Select an image by choosing a number between 1 - 100
+    1. You can type this number into the text box or use the “+” and “-” buttons to
+increment/decrement the number
+2. Choose a CBIR method using the drop down menu next to the image.
+3. Click “Retrieve Images” and wait for the results to appear below the query image.
+4. Use the “Next Page” and “Previous Page” to view different pages of results.
+
+**Intensity + Color-Code (Relevance Feedback available)**
+1. Select an image by choosing a number between 1 - 100
+    1. You can type this number into the text box or use the “+” and “-” buttons to
+increment/decrement the number
+2. Select “Intensity + Color Code” as your method.
+3. Click “Retrieve Images” and wait for the results to appear at the bottom
+4. Use the “Next Page” and “Previous Page” to view different pages of results.
+5. To use Relevance Feedback, click the “Use Relevance Feedback” checkbox. Checkboxes will
+appear under each image to allow you to choose relevant images.
+    1. If you choose a checkbox on a different page, you might notice that the
+checkboxes on the previous page are unchecked. Don’t worry, the app will still
+remember the images you chose. This is a quirk of Streamlit.
+6. To see the new results after selecting your images, click the “Retrieve Images” button
+again. Make sure the “Intensity + Color Code” is still selected in the drop down menu.
+7. You can repeat this process as many times as you want for a single image.
+    1. The app will remember which relevant images you chose for your query image
+until you select a new query image or change the CBIR method to “Intensity” or
+“Color Code”.
+
+## How It Works
+
 ### Intensity Method
 The Intesity method transforms each 24-bit RGB pixel value into an 8-bit value using the following formula:
 
@@ -31,3 +67,7 @@ This method combines the values computed with the Intensity and Color-Code metho
 
 The feature matrix is normalized using the Gaussian Normalization formula, described as follows:
 $$\nu_k = \frac{\nu_k - \mu_k}{\sigma_k}$$
+
+where, for an image $k$, $\nu_k$ is the feature, $\mu_k$ is the average of $k$'s features, and $\sigma_k$ is the standard deviation of $k$'s features.
+
+The Relevance Feedback implementation used is a simplification of the implementation outlined in [this](https://ieeexplore.ieee.org/document/718510) paper.
