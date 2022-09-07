@@ -4,12 +4,13 @@ The Content-Based Image Retrieval tool uses two different color histogram compar
 ### Intensity Method
 The Intesity method transforms each 24-bit RGB pixel value into an 8-bit value using the following formula:
 
-![equation](https://latex.codecogs.com/svg.image?I&space;=&space;0.299R&space;&plus;&space;0.587G&space;&plus;&space;0.114B)
+$$I=0.299R+0.587G+0.114B$$ 
 
 
 The histogram bins selected for this method are listed as follows:
 
-![equation](https://latex.codecogs.com/svg.image?H_1:&space;I&space;\epsilon&space;[0,10\);&space;H_2:&space;I&space;\epsilon&space;[10,20\);&space;H_3:&space;I&space;\epsilon&space;[20,30\)&space;...&space;H_{25}:&space;I&space;\epsilon&space;[240,&space;255];)
+$$H_1: I \epsilon [0,10); H_2: I \epsilon [10,20); H_3: I \epsilon [20,30); ... H_{25}: I \epsilon [240,255];$$
+
 
 ### Color-Code Method
 The Color-Code  method transforms the 24-bit RBG pixel value into a 6-bit color code. This color code is composed of the most significant 2 bits of each color channel. This is illustrated in the following figure:
